@@ -109,10 +109,6 @@ export default function Navbar({
     setMenuOpen(false);
     if (user) {
       try {
-        // Change this:
-        await signOut();
-
-        // To this:
         await signOutUser();
 
         onToast?.("Logged out successfully.", "info");

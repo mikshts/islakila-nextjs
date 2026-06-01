@@ -1,13 +1,8 @@
-// src/app/layout.js
-import Navbar from "@/components/Navbar";
-
-export default function RootLayout({ children }) {
+export default function LayoutPage() {
   return (
-    <html lang="en">
-      <body>
-        <Navbar />
-        {children}
-      </body>
-    </html>
+    <div className="container mx-auto py-8">
+      <h1>Layout Information</h1>
+      <p>This is the layout information page.</p>
+    </div>
   );
 }

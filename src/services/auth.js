@@ -27,6 +27,9 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
+
+// Alias for signOut
+export const signOutUser = signOut;
 // Add this function to your existing src/services/auth.js
 
 export async function updatePassword(newPassword) {
