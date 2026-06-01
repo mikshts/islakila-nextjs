@@ -1,253 +1,29 @@
-"use client";
+import { Suspense } from "react";
+import { ListingsContent } from "./ListingsContent";
 
-import { useState, useEffect, memo, useCallback, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Building, RefreshCw } from "lucide-react";
-
-// --- TEMPORARY MOCKS FOR COMPONENT CONTINUITY ---
-// Switch these once you copy your real component files over to src/components/
-const ListingCard = ({ item, onView }) => (
-  <div
-    onClick={() => onView(item)}
-    className="p-4 bg-white border border-gray-100 rounded-2xl cursor-pointer shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-    <div className="h-44 bg-gray-50 rounded-xl mb-3 overflow-hidden relative">
-      {item.images?.[0] && (
-        <img
-          src={item.images[0]}
-          alt={item.title}
-          className="w-full h-full object-cover"
-        />
-      )}
-      <span className="absolute top-2 right-2 bg-white/90 text-[10px] font-bold px-2 py-0.5 rounded shadow-xs text-gray-700">
-        {item.status}
-      </span>
-    </div>
-    <div>
-      <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-        {item.subcategory_name}
-      </span>
-      <h4 className="font-bold text-gray-800 mt-1.5 line-clamp-1">
-        {item.title}
-      </h4>
-      <p className="text-xs text-gray-400 mt-0.5">📍 {item.location}</p>
-    </div>
-    <div className="border-t pt-3 mt-3 flex justify-between items-center">
-      <p className="text-blue-600 font-extrabold text-sm">
-        ₱{item.price || "Contact"}
-      </p>
-    </div>
-  </div>
-);
-
-const SkeletonGrid = ({ count }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-    {[...Array(count || 6)].map((_, i) => (
-      <div
-        key={i}
-        className="animate-pulse bg-gray-200 h-64 rounded-2xl w-full"
-      />
-    ))}
-  </div>
-);
-
-const ConfirmModal = () => null;
-
-const PAGE_SIZE = 9;
-
-export const ListingsPage = memo(() => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // Extract variables natively from Next.js address parameters
-  const urlSearch = searchParams.get("search") || "";
-  const urlCategoryId = searchParams.get("categoryId") || null;
-
-  // Global Core State Elements
-  const [user, setUser] = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
-  const [listings, setListings] = useState([]);
-  const [total, setTotal] = useState(0);
-
-  const [selectedCategoryId, setSelectedCategoryId] = useState(urlCategoryId);
-  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-
-  // Sync session authentication state
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-  }, []);
-
-  // Fetch structured platform category layout maps from data schema
-  useEffect(() => {
-    async function fetchPlatformStructure() {
-      try {
-        const { data: catData } = await supabase
-          .from("categories")
-          .select("*")
-          .order("display_order", { ascending: true });
-        setCategories(catData || []);
-
-        const { data: subData } = await supabase
-          .from("subcategories")
-          .select("*")
-          .order("display_order", { ascending: true });
-        setSubcategories(subData || []);
-      } catch (err) {
-        console.error("Failed to compile layout definitions:", err);
-      }
-    }
-    fetchPlatformStructure();
-  }, []);
-
-  // Central Dynamic Fetch Function querying against base schema criteria
-  const fetchFilteredListings = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Step 1: Base query pointing to your production database view layout
-      let query = supabase
-        .from("listings_with_names")
-        .select("*", { count: "exact" });
-
-      // Step 2: Inject relational constraints conditionally
-      if (selectedCategoryId) {
-        query = query.eq("category_id", selectedCategoryId);
-      }
-      if (selectedSubcategoryId) {
-        query = query.eq("subcategory_id", selectedSubcategoryId);
-      }
-      if (urlSearch.trim() !== "") {
-        // Utilizing your generated full-text search vector index
-        query = query.textSearch("search_vector", urlSearch.trim());
-      }
-
-      // Step 3: Implement system row-pagination blocks
-      const fromRow = (currentPage - 1) * PAGE_SIZE;
-      const toRow = fromRow + PAGE_SIZE - 1;
-
-      const {
-        data,
-        count,
-        error: fetchError,
-      } = await query
-        .order("created_at", { ascending: false })
-        .range(fromRow, toRow);
-
-      if (fetchError) throw fetchError;
-
-      setListings(data || []);
-      setTotal(count || 0);
-    } catch (err) {
-      setError(err.message || "An unexpected loading discrepancy occurred.");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedCategoryId, selectedSubcategoryId, urlSearch, currentPage]);
-
-  // Synchronize triggers on data parameter adjustments
-  useEffect(() => {
-    fetchFilteredListings();
-  }, [fetchFilteredListings]);
-
-  // Sync state cleanly when top level categories alter via URL parameters
-  useEffect(() => {
-    setSelectedCategoryId(urlCategoryId);
-    setSelectedSubcategoryId(null);
-    setCurrentPage(1);
-  }, [urlCategoryId]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [urlSearch]);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [selectedCategoryId, selectedSubcategoryId, urlSearch, currentPage]);
-
-  const handlePageChange = (page) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
-  };
-
-  const handleCategoryClick = (catId) => {
-    setSelectedCategoryId(catId === selectedCategoryId ? null : catId);
-    setSelectedSubcategoryId(null);
-    setCurrentPage(1);
-  };
-
-  const handleSubcategoryClick = (subId) => {
-    setSelectedSubcategoryId(subId === selectedSubcategoryId ? null : subId);
-    setCurrentPage(1);
-  };
-
-  const availableSubcategories = useMemo(() => {
-    return subcategories.filter(
-      (sub) => sub.category_id === selectedCategoryId,
-    );
-  }, [subcategories, selectedCategoryId]);
-
-  const getPageNumbers = () => {
-    const delta = 2;
-    const range = [];
-    const left = currentPage - delta;
-    const right = currentPage + delta;
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= left && i <= right)) {
-        range.push(i);
-      } else if (range[range.length - 1] !== "...") {
-        range.push("...");
-      }
-    }
-    return range;
-  };
-
+// Fallback component shown while ListingsContent is loading
+function ListingsSkeleton() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 font-sans">
-      {/* Header Context Bar */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => router.push("/")}
-          className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <div className="flex-1">
-          <h2 className="text-xl font-bold text-gray-900">
-            {selectedCategoryId
-              ? categories.find((c) => c.id === selectedCategoryId)?.name ||
-                "Category"
-              : "All Listings"}
-          </h2>
-          <p className="text-sm text-gray-500">
-            {loading
-              ? "Loading records..."
-              : `${total} propert${total === 1 ? "y" : "ies"} discovered`}
-          </p>
-        </div>
-        <button
-          onClick={fetchFilteredListings}
-          className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
-          title="Refresh Container">
-          <RefreshCw
-            className={`w-4 h-4 text-gray-500 ${loading ? "animate-spin" : ""}`}
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {[...Array(9)].map((_, i) => (
+          <div
+            key={i}
+            className="animate-pulse bg-gray-200 h-64 rounded-2xl w-full"
           />
-        </button>
+        ))}
       </div>
+    </div>
+  );
+}
 
-      {/* Query Filter Clear Notification Bar */}
-      {urlSearch && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
-          <span>
-            Showing results for{" "}
-            <span className="font-semibold text-blue-600">"{urlSearch}"</span>
+export default function ListingsPage() {
+  return (
+    <Suspense fallback={<ListingsSkeleton />}>
+      <ListingsContent />
+    </Suspense>
+  );
+}
           </span>
           <button
             onClick={() => router.push("/listings")}
