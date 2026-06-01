@@ -12,6 +12,8 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 // Services
 import { fetchUserListings, deleteListing } from "@/services/listings";
 
+export const dynamic = "force-dynamic";
+
 export default function MyListingsPage({ onToast, user }) {
   const router = useRouter();
   const [listings, setListings] = useState([]);

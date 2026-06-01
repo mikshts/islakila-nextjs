@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 const MESSAGES_PER_PAGE = 20;
 
 // Helper to format phone for display locally

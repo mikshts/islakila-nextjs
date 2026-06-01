@@ -4,6 +4,8 @@ import { useState, useCallback, memo, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2, MapPin } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 // Components & Hooks
 import { PhoneInput } from "@/components/PhoneInput";
 import { ImageUploader } from "@/components/ImageUploader";

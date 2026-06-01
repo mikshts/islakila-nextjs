@@ -4,6 +4,8 @@ import { useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import { Waves, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+
+export const dynamic = "force-dynamic";
 import { signInWithGoogle } from "@/services/auth";
 
 export const LoginPage = memo(() => {

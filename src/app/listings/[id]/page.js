@@ -4,6 +4,8 @@ import { useState, useRef, useCallback, memo, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+
+export const dynamic = "force-dynamic";
 import {
   ArrowLeft,
   MapPin,

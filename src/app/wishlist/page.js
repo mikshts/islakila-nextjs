@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Heart } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 // Components
 import { ListingCard } from "@/components/ListingCard";
 import { SkeletonGrid } from "@/components/Skeleton";

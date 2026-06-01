@@ -4,6 +4,8 @@ import { useState, useEffect, memo, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+
+export const dynamic = "force-dynamic";
 import {
   Search,
   ChevronRight,
