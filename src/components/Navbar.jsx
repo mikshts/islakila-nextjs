@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 // Adjust this import path depending on where your AuthContext is located in Next.js
 import { useAuth } from "@/context/AuthContext";
-import { signOut } from "@/services/auth"; // Update this path if needed
+import { signOutUser } from "@/services/auth";
 import { MessageSquare, Coffee } from "lucide-react";
 import { supabase } from "@/lib/supabase"; // Updated to use your new shared Supabase client
 import { ROUTES } from "@/constants"; // Update or remove if you use Next.js string paths directly
@@ -105,12 +105,16 @@ export default function Navbar({
       updateLastVisit();
     }
   }, [currentPage, user, updateLastVisit]);
-
   const handleAuthAction = async () => {
     setMenuOpen(false);
     if (user) {
       try {
+        // Change this:
         await signOut();
+
+        // To this:
+        await signOutUser();
+
         onToast?.("Logged out successfully.", "info");
         navigate(ROUTES.HOME);
       } catch (err) {
@@ -120,7 +124,6 @@ export default function Navbar({
       navigate(ROUTES.LOGIN);
     }
   };
-
   const navTo = (page, opts = {}) => {
     setMenuOpen(false);
     navigate(page, opts);

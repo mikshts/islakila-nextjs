@@ -1,26 +1,58 @@
-import { supabase } from "@/lib/supabase";
-
-// Function to trigger Google OAuth Login
+import { supabase } from "./supabase.js";
 export async function signInWithGoogle() {
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        // This redirects the user back to your site after completing Google login
-        redirectTo: window.location.origin,
-      },
-    });
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("Error signing in with Google:", error.message);
-    throw error;
-  }
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) throw error;
+  return data;
 }
 
-// Function to sign out
-export async function signOutUser() {
+export async function signInWithEmail(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function signUpWithEmail(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) throw error;
+  return data;
+}
+
+export async function signOut() {
   const { error } = await supabase.auth.signOut();
-  if (error) console.error("Error signing out:", error.message);
+  if (error) throw error;
+}
+// Add this function to your existing src/services/auth.js
+
+export async function updatePassword(newPassword) {
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+  if (error) throw error;
+  return data;
+}
+export async function getSession() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session;
+}
+
+export function onAuthStateChange(callback) {
+  return supabase.auth.onAuthStateChange((event, session) => {
+    callback(event, session);
+  });
+}
+
+export async function sendPasswordResetEmail(email) {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw error;
+  return data;
 }
